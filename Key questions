@@ -1,0 +1,198 @@
+-- Key Business Questions
+
+-- Which movies contributed the most to revenue gain?
+SELECT rental.inventory_id AS inventory_id, -- as list
+		   film.title AS title, 
+			 COUNT (rental.inventory_id) AS times_rented, 
+			 SUM(payment.amount) as revenue, 
+			 film.rental_rate AS rate, 
+			 film.length AS length, 
+			 category.name AS category, 
+			 film.rating AS rating
+       FROM payment
+       INNER JOIN rental ON payment.rental_id = rental.rental_id
+       INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+       INNER JOIN film ON inventory.film_id = film.film_id
+       INNER JOIN film_category ON film.film_id = film_category.film_id
+       INNER JOIN category ON film_category.category_id = category.category_id
+       GROUP BY rental.inventory_id, film.film_id, category, rating
+       ORDER BY times_rented DESC, revenue DESC
+       LIMIT 10
+
+-- Summarize data of top ten movies using a CTE
+WITH top_10_rentals (inventory_id, title, times_rented, revenue, rate, length, category, rating) AS
+        (SELECT rental.inventory_id AS inventory_id, 
+		    film.title AS title, 
+				COUNT (rental.inventory_id) AS times_rented, 
+				SUM(payment.amount) as revenue, 
+				film.rental_rate AS rate, 
+				film.length AS length, 
+				category.name AS category, 
+				film.rating AS rating, 
+				film.fulltext 
+        FROM payment
+        INNER JOIN rental ON payment.rental_id = rental.rental_id
+        INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+        INNER JOIN film ON inventory.film_id = film.film_id
+        INNER JOIN film_category ON film.film_id = film_category.film_id
+        INNER JOIN category ON film_category.category_id = category.category_id
+        GROUP BY rental.inventory_id, film.film_id, category, rating
+        ORDER BY times_rented DESC, revenue DESC
+        LIMIT 10)
+SELECT ROUND(AVG(rate),2) as avg_rental_rate, ROUND(AVG (length),2) AS avg_lenght, MODE() WITHIN GROUP (ORDER BY category) AS mode_category, MODE() WITHIN GROUP (ORDER BY rating) AS mode_rating
+FROM top_10_rentals
+
+-- Which movies contributed the least to revenue gain?
+SELECT rental.inventory_id AS inventory_id, 
+		    film.title AS title, 
+				COUNT (rental.inventory_id) AS times_rented, 
+				SUM(payment.amount) as revenue, 
+				film.rental_rate AS rate, 
+				film.length AS length, 
+				category.name AS category, 
+				film.rating AS rating, 
+				film.fulltext 
+        FROM payment
+        INNER JOIN rental ON payment.rental_id = rental.rental_id
+        INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+        INNER JOIN film ON inventory.film_id = film.film_id
+        INNER JOIN film_category ON film.film_id = film_category.film_id
+        INNER JOIN category ON film_category.category_id = category.category_id
+        GROUP BY rental.inventory_id, film.film_id, category, rating
+        ORDER BY times_rented ASC, revenue ASC
+        LIMIT 10;
+
+-- Which countries are Rockbuster customers based in? - Find top 10 countries in terms of customers
+SELECT D.country,
+       COUNT(customer_id) AS costumer_count
+FROM customer A
+INNER JOIN address B ON A.address_id = B.address_id
+INNER JOIN city C ON B.city_id = C.city_id
+INNER JOIN country D ON C.country_ID = D.country_ID
+GROUP BY country
+ORDER BY costumer_count DESC
+LIMIT 10; 
+
+-- Where are customers with a high lifetime value based?
+WITH top_10_countries (country, costumer_count) AS (SELECT D.country,
+                  COUNT(customer_id) AS costumer_count
+                  FROM customer A
+                  INNER JOIN address B ON A.address_id = B.address_id
+                  INNER JOIN city C ON B.city_id = C.city_id
+                  INNER JOIN country D ON C.country_ID = D.country_ID
+                  GROUP BY country
+                  ORDER BY costumer_count DESC
+                  LIMIT 10),
+	  top_10_cities (city, customer_count) AS (SELECT C.city, D. country,
+                  COUNT (A.customer_id) AS costumer_count, 
+	                SUM (amount) AS total_amount_paid
+                  FROM customer A
+                  INNER JOIN address B ON A.address_id = B.address_id
+                  INNER JOIN city C ON B.city_id = C.city_id
+                  INNER JOIN country D ON C.country_ID = D.country_ID
+                  INNER JOIN top_10_countries ON top_10_countries.country = D.country
+                  INNER JOIN payment E ON A.customer_id = E.customer_id
+                  WHERE D.country IN (top_10_countries.country)
+                  GROUP BY city, D.country
+                  ORDER BY costumer_count DESC
+                  LIMIT 10)
+SELECT A.customer_id, (CONCAT (A.first_name, ' ', A.last_name)) AS customer_name, C.city, D.country,
+       SUM (amount) AS total_amount_paid
+FROM customer A
+INNER JOIN address B ON A.address_id = B.address_id
+INNER JOIN city C ON B.city_id = C.city_id
+INNER JOIN country D ON C.country_ID = D.country_ID
+INNER JOIN top_10_countries ON top_10_countries.country = D.country
+INNER JOIN top_10_cities ON top_10_cities.city = C.city
+INNER JOIN payment E ON A.customer_id = E.customer_id
+WHERE C.city IN (top_10_cities.city)
+GROUP BY A.customer_id, top_10_cities.customer_count, C.city, D.country
+ORDER BY total_amount_paid DESC, top_10_cities.customer_count DESC
+LIMIT 5; -- Top 5 customers for top 10 cities
+
+SELECT customer.customer_id, 
+       (CONCAT(customer.first_name, ' ', customer.last_name)) AS customer_name,
+       city.city AS city,
+	     country.country AS country,
+	     SUM (payment.amount) AS total_amount_paid,
+	     COUNT(rental.inventory_id) AS films_rented,
+	     ROUND(AVG(film.rental_duration),0) as avg_rental_duration,
+       MODE() WITHIN GROUP (ORDER BY category.name) AS top_category 
+FROM customer
+INNER JOIN payment ON payment.customer_id = customer.customer_id
+INNER JOIN rental ON payment.rental_id = rental.rental_id
+INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+INNER JOIN film ON inventory.film_id = film.film_id
+INNER JOIN film_category ON film.film_id = film_category.film_id
+INNER JOIN category ON film_category.category_id = category.category_id
+INNER JOIN address ON customer.address_id = address.address_id
+INNER JOIN city ON address.city_id = city.city_id
+INNER JOIN country ON city.country_ID = country.country_ID
+GROUP BY customer.customer_id, customer_name, city, country
+ORDER BY total_amount_paid DESC
+LIMIT 5; -- Top 5 customers overall
+
+
+-- Do sales figures vary between geographic regions?
+SELECT COUNT(DISTINCT customer.customer_id) AS customers_per_country, 
+		  country.country,
+		  SUM(payment.amount) AS revenue,
+		  ROUND((SUM(payment.amount))/(COUNT(DISTINCT customer.customer_id)),2) AS avg_revenue_per_costumer
+FROM payment
+INNER JOIN customer ON payment.customer_id = customer.customer_id
+INNER JOIN address ON customer.address_id = address.address_id
+INNER JOIN city ON address.city_id = city.city_id
+INNER JOIN country ON city.country_ID = country.country_ID
+GROUP BY country.country
+ORDER BY customers_per_country DESC;
+
+
+-- Other questions
+
+-- Film title contains the word Uptown in any position
+SELECT film_ID, title, description 
+FROM film 
+WHERE title LIKE '%Uptown%'
+
+-- Film length is more than 120 minutes and rental rate is more than 2.99
+SELECT film_ID, title, description 
+FROM film 
+WHERE length >120 AND rental_rate >2.99
+
+-- Rental duration is between 3 and 7 days, where 3 and 7 aren’t inclusive
+SELECT film_ID, title, description
+FROM film 
+WHERE rental_duration BETWEEN 3 AND 7
+AND NOT rental_duration IN (3,7)
+
+-- Film replacement cost is less than 14.99
+SELECT film_ID, title, description
+FROM film 
+WHERE replacement_cost <14.99
+
+-- Film rating is either PG or G
+SELECT film_ID, title, description
+FROM film 
+WHERE rating ='PG' OR rating ='G'
+
+-- Summarize data of films with rating either PG or G, grouped by rating
+SELECT
+    COUNT(film_id) AS count_of_movies,
+    AVG(rental_rate) AS avg_movie_rental_rate,
+    MAX(rental_duration) AS max_rental_duration,
+    MIN(rental_duration) AS min_rental_duration,
+    CASE
+        WHEN rating = 'PG' THEN 'Parental Guidance'
+        WHEN rating = 'G' THEN 'General Audiences'
+    END AS kids_allowed
+FROM film 
+WHERE rating = 'PG' OR rating = 'G'
+GROUP BY rating
+
+
+
+
+
+
+
+
