@@ -15,15 +15,15 @@ The Rockbuster Stealth Management Board has asked a series of business questions
 
 ### Data
 The [Rockbuster Data Set](http://www.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip) contains information about Rockbuster’s film inventory, customers, and payments, among other things.
-The [Data Dictionary](https://github.com/msalomegarcia/rockbusterSQL/blob/main/Data%20Dictionary.pdf) is available for viewing in the project folder.
+The [Data Dictionary](rockbusterSQL/blob/main/Data%20Dictionary.pdf) is available for viewing in the project folder.
 
 ### Tools 
 This project used PostgreSQL to clean and analyze the data, and Tableau for data visualization.
 
 ### Code
-[SQL code]() is available in the project folder:
-- [Descriptive statistics and data summaries](https://github.com/msalomegarcia/rockbusterSQL/blob/main/Descriptive%20queries)
-- [Key Questions]
+SQL code is available in the project folder:
+- [Descriptive statistics and data summaries](rockbusterSQL/blob/main/Descriptive%20queries)
+- [Key Questions](rockbusterSQL/blob/main/Key%20questions)
 
 ### External Links
 - [Tableau Rockbuster Stealth Data Analysis Project]()
