@@ -15,7 +15,7 @@ The Rockbuster Stealth Management Board has asked a series of business questions
 
 ### Data
 The [Rockbuster Data Set](http://www.postgresqltutorial.com/wp-content/uploads/2019/05/dvdrental.zip) contains information about Rockbuster’s film inventory, customers, and payments, among other things.
-The [Data Dictionary] is available in the project folder.
+The [Data Dictionary](Data Dictionary.pdf) is available for viewing in the project folder.
 
 ### Tools 
 This project used PostgreSQL to clean and analyze the data, and Tableau for data visualization.
