@@ -21,7 +21,9 @@ The [Data Dictionary](https://github.com/msalomegarcia/rockbusterSQL/blob/main/D
 This project used PostgreSQL to clean and analyze the data, and Tableau for data visualization.
 
 ### Code
-[SQL code]() is available in the project folder.
+[SQL code]() is available in the project folder:
+- [Descriptive statistics and data summaries](https://github.com/msalomegarcia/rockbusterSQL/blob/main/Descriptive%20queries)
+- [Key Questions]
 
 ### External Links
 - [Tableau Rockbuster Stealth Data Analysis Project]()
