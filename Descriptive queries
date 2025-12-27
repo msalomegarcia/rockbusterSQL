@@ -1,0 +1,103 @@
+-- Summarizing customers and films data
+
+WITH rentals (customer_id, payments, payment_date, inventory_id, title, times_rented, revenue, rate, replacement_cost, rental_duration, length, category, language, rating) AS 
+        (SELECT customer.customer_id AS customer_id,
+		        payment.amount AS payments,
+				payment.payment_date AS payment_date,
+		        rental.inventory_id AS inventory_id, 
+		        film.title AS title, 
+				COUNT (rental.inventory_id) AS times_rented, 
+				SUM(payment.amount) as revenue, 
+				film.rental_rate AS rate,
+				film.replacement_cost AS replacement_cost,
+				CAST(film.rental_duration AS integer) AS rental_duration,
+				CAST(film.length AS integer) AS length, 
+				category.name AS category,
+				language.name AS language,
+				film.rating AS rating
+         FROM payment
+         INNER JOIN rental ON payment.rental_id = rental.rental_id
+         INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+         INNER JOIN film ON inventory.film_id = film.film_id
+         INNER JOIN film_category ON film.film_id = film_category.film_id
+         INNER JOIN category ON film_category.category_id = category.category_id
+		 INNER JOIN language ON film.language_id = language.language_id
+		 INNER JOIN customer ON payment.customer_id = customer.customer_id
+         GROUP BY customer.customer_id, rental.inventory_id, payment.amount, payment_date, film.film_id, category, language.name, rating)
+SELECT COUNT(DISTINCT customer_id) AS total_customers,
+       COUNT(DISTINCT title) AS total_titles,
+	   COUNT(DISTINCT inventory_id) AS total_inventory,
+	   (SELECT MIN(inventory_per_film) AS min_inventory_per_film FROM ((SELECT COUNT(DISTINCT inventory_id) FROM rentals GROUP BY title)) AS inventory_per_film),
+	   (SELECT MAX(inventory_per_film) AS max_inventory_per_film FROM ((SELECT COUNT(DISTINCT inventory_id) FROM rentals GROUP BY title)) AS inventory_per_film),
+	   SUM(payments) AS total_revenue,
+	   MAX(payment_date) as last_payment,
+       ROUND(AVG(times_rented),0) as avg_times_rented_per_customer,
+       MIN(rate) as min_rental_rate,
+       MAX(rate) as max_rental_rate,
+       ROUND(AVG(rate),2) as avg_rental_rate,
+	   MIN(replacement_cost) as min_replacement_cost,
+       MAX(replacement_cost) as max_replacement_cost,
+       ROUND(AVG(replacement_cost),2) as avg_replacement_cost,
+	   MIN(rental_duration) as min_rental_duration,
+       MAX(rental_duration) as max_rental_duration,
+	   ROUND(AVG(rental_duration),2) as avg_rental_duration,
+	   MIN(length) as min_length,
+       MAX(length) as max_length, 
+	   ROUND(AVG(length),2) as avg_length,
+	   COUNT(DISTINCT category) AS count_category,
+	   MODE() WITHIN GROUP (ORDER BY category) AS mode_category, 
+	   COUNT(DISTINCT language) AS count_language,
+	   MODE() WITHIN GROUP (ORDER BY language) AS mode_language, 
+	   COUNT(DISTINCT rating) AS count_rating,
+	   MODE() WITHIN GROUP (ORDER BY rating) AS mode_rating
+FROM rentals
+
+
+-- Summarizing staff, inventiry, and revenue by stores
+SELECT staff.staff_id, store.store_id, city.city, country.country,
+	   COUNT(DISTINCT inventory.inventory_id) AS inventory_count,
+	   COUNT(DISTINCT film.title) AS film_count,
+	   COUNT(DISTINCT rental.customer_id) AS customer_count,
+	   SUM(payment.amount) AS revenue
+FROM store
+INNER JOIN address ON store.address_id = address.address_id
+INNER JOIN city ON address.city_id = city.city_id
+INNER JOIN country ON city.country_ID = country.country_ID
+INNER JOIN staff ON store.manager_staff_id = staff.staff_id
+INNER JOIN rental ON staff.staff_id = rental.staff_id
+INNER JOIN payment ON payment.rental_id = rental.rental_id
+INNER JOIN customer ON rental.customer_id = customer.customer_id
+INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+INNER JOIN film ON inventory.film_id = film.film_id
+GROUP BY staff.staff_id, store.store_id, city.city, country.country
+
+
+-- Summarizing revenue by category
+SELECT category.name AS category,
+	     SUM(payment.amount) as revenue
+FROM payment
+INNER JOIN rental ON payment.rental_id = rental.rental_id
+INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+INNER JOIN film ON inventory.film_id = film.film_id
+INNER JOIN film_category ON film.film_id = film_category.film_id
+INNER JOIN category ON film_category.category_id = category.category_id
+GROUP BY category
+ORDER BY revenue DESC
+
+
+-- Summarizing revenue by rating
+SELECT film.rating AS rating,
+	     SUM(payment.amount) as revenue
+FROM payment
+INNER JOIN rental ON payment.rental_id = rental.rental_id
+INNER JOIN inventory ON rental.inventory_id = inventory.inventory_id
+INNER JOIN film ON inventory.film_id = film.film_id
+INNER JOIN film_category ON film.film_id = film_category.film_id
+INNER JOIN category ON film_category.category_id = category.category_id
+GROUP BY rating
+ORDER BY revenue DESC
+
+
+
+
+
