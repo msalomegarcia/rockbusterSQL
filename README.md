@@ -26,4 +26,4 @@ SQL code is available in the project folder:
 - [Key Questions](rockbusterSQL/blob/main/Key%20questions)
 
 ### External Links
-- [Tableau Rockbuster Stealth Data Analysis Project]()
+- [Tableau Rockbuster Stealth Data Analysis Project](https://public.tableau.com/shared/FTQQDN97S?:display_count=n&:origin=viz_share_link)
